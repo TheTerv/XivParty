@@ -140,6 +140,12 @@ function utils:log(text, level)
     end
 end
 
+-- trim helper (remove leading/trailing whitespace)
+function utils:trim(s)
+    if not s then return s end
+    return s:match('^%s*(.-)%s*$')
+end
+
 function utils:toString(obj)
     if obj then
         return tostring(obj)

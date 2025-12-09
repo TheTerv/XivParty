@@ -35,6 +35,11 @@ local uiImage = require('uiImage')
 local const = require('const')
 local utils = require('utils')
 
+-- Local log helper to match Windower global log
+local function log(text, level)
+    utils:log(text, level)
+end
+
 -- create the class
 local uiPartyList = classes.class(uiContainer)
 

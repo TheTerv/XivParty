@@ -72,20 +72,23 @@ function model:updatePlayers()
         local idx = (i / 6):floor()
         local member = members[string.format(partyKeys[idx + 1], i % 6)]
 
-        if member and member.name then
-            local id
-            if member.mob and member.mob.id > 0 then
-                id = member.mob.id
-            end
+            if member and member.name then
+                local id
+                if member.mob and member.mob.id > 0 then
+                    id = member.mob.id
+                end
 
-            local foundPlayer = self:getPlayer(member.name, id, 'member')
-            if foundPlayer then
-                foundPlayer:update(member, target, subtarget)
-            end
+                local foundPlayer = self:getPlayer(member.name, id, 'member')
+                if foundPlayer then
+                    foundPlayer:update(member, target, subtarget)
+                    if utils.level <= 1 then
+                        utils:log(string.format('Update %s HP:%s MP:%s TP:%s', member.name, tostring(member.hp), tostring(member.mp), tostring(member.tp)), 1)
+                    end
+                end
 
-            self.parties[idx][i % 6] = foundPlayer
-        else
-            self.parties[idx][i % 6] = nil
+                self.parties[idx][i % 6] = foundPlayer
+            else
+                self.parties[idx][i % 6] = nil
         end
     end
 end
