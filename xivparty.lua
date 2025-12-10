@@ -45,6 +45,11 @@ local chat = require('chat');
 -- Load the Windower compatibility adapter (creates global 'windower' table)
 require('adapter');
 
+-- Load Windower compatibility shims for tables/lists (defines global T{} and L{})
+-- These MUST be loaded before any module that uses them
+require('tables');
+require('lists');
+
 -- Pre-load the config shim so it's available for other modules
 package.loaded['config'] = require('config');
 
@@ -547,7 +552,75 @@ ashita.events.register('command', 'xivparty_command', function(e)
     local arg3 = args[4]
     local arg4 = args[5]
 
-    if command == 'testshim' then
+    if command == 'status' then
+        -- Debug status command - bypasses log level filter
+        print(chat.header(addon.name):append(chat.message('--- XivParty Status ---')));
+        print(chat.header(addon.name):append(chat.message('  isInitialized: ' .. tostring(isInitialized))));
+        print(chat.header(addon.name):append(chat.message('  Settings: ' .. tostring(Settings ~= nil))));
+        print(chat.header(addon.name):append(chat.message('  view: ' .. tostring(view ~= nil))));
+        print(chat.header(addon.name):append(chat.message('  isZoning: ' .. tostring(isZoning))));
+        print(chat.header(addon.name):append(chat.message('  isUiHidden: ' .. tostring(isUiHidden))));
+        if Settings then
+            print(chat.header(addon.name):append(chat.message('  Settings.hideSolo: ' .. tostring(Settings.hideSolo))));
+        end
+        -- Model debug
+        if model then
+            local p0 = model.parties[0][0];
+            print(chat.header(addon.name):append(chat.message('  model.parties[0][0]: ' .. (p0 and p0.name or 'nil'))));
+            local count = 0;
+            for i = 0, 5 do if model.parties[0][i] then count = count + 1 end end
+            print(chat.header(addon.name):append(chat.message('  Party0 count: ' .. count)));
+        end
+        -- View debug
+        if view then
+            print(chat.header(addon.name):append(chat.message('  view.isEnabled: ' .. tostring(view.isEnabled))));
+            print(chat.header(addon.name):append(chat.message('  view.isCreated: ' .. tostring(view.isCreated))));
+            if view.partyLists and view.partyLists[0] then
+                local pl = view.partyLists[0];
+                print(chat.header(addon.name):append(chat.message('  partyList[0].isEnabled: ' .. tostring(pl.isEnabled))));
+                print(chat.header(addon.name):append(chat.message('  partyList[0].isCreated: ' .. tostring(pl.isCreated))));
+                local itemCount = 0;
+                if pl.listItems then
+                    for i = 0, 5 do if pl.listItems[i] then itemCount = itemCount + 1 end end
+                end
+                print(chat.header(addon.name):append(chat.message('  partyList[0].listItems count: ' .. itemCount)));
+            end
+        end
+        return;
+    elseif command == 'trace' then
+        -- Detailed trace of model update
+        print(chat.header(addon.name):append(chat.message('--- Trace model:updatePlayers ---')));
+        local party = windower.ffxi.get_party();
+        print(chat.header(addon.name):append(chat.message('1. get_party returned: ' .. type(party))));
+        if party then
+            print(chat.header(addon.name):append(chat.message('2. party.p0: ' .. type(party.p0) .. ' = ' .. (party.p0 and party.p0.name or 'nil'))));
+        end
+        local ok, err = pcall(function()
+            model:updatePlayers();
+        end);
+        if ok then
+            print(chat.header(addon.name):append(chat.message('3. updatePlayers() succeeded')));
+        else
+            print(chat.header(addon.name):append(chat.error('3. updatePlayers() FAILED: ' .. tostring(err))));
+        end
+        local p0 = model.parties[0][0];
+        print(chat.header(addon.name):append(chat.message('4. model.parties[0][0]: ' .. (p0 and p0.name or 'nil'))));
+        -- Now test view update
+        local ok2, err2 = pcall(function()
+            view:update();
+        end);
+        if ok2 then
+            print(chat.header(addon.name):append(chat.message('5. view:update() succeeded')));
+        else
+            print(chat.header(addon.name):append(chat.error('5. view:update() FAILED: ' .. tostring(err2))));
+        end
+        local itemCount = 0;
+        if view.partyLists and view.partyLists[0] and view.partyLists[0].listItems then
+            for i = 0, 5 do if view.partyLists[0].listItems[i] then itemCount = itemCount + 1 end end
+        end
+        print(chat.header(addon.name):append(chat.message('6. listItems count after update: ' .. itemCount)));
+        return;
+    elseif command == 'testshim' then
         runTestShim()
     elseif command == 'testui' then
         if testImage then

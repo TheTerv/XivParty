@@ -69,7 +69,7 @@ function model:updatePlayers()
     local subtarget = windower.ffxi.get_mob_by_target('st') or windower.ffxi.get_mob_by_target('stpt') or windower.ffxi.get_mob_by_target('stal')
 
     for i = 0, 17 do
-        local idx = (i / 6):floor()
+        local idx = math.floor(i / 6)
         local member = members[string.format(partyKeys[idx + 1], i % 6)]
 
             if member and member.name then

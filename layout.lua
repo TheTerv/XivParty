@@ -35,11 +35,12 @@
 
 -- windower library imports
 require('tables')
+require('lists')
 
 -- helper functions
 local function element(values)
     local ret = {
-        enabled = false,
+        enabled = true, -- Changed to true since XML parsing isn't implemented yet
         pos = L{ 0, 0 },
         scale = L{ 1, 1 },
         zOrder = 0,

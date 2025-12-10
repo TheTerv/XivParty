@@ -77,7 +77,10 @@ function table.equals(a, b)
     return true
 end
 
--- Expose globally to mirror Windower behavior.
-_G.T = T
+-- Only expose globally if Ashita hasn't already defined T (from sugar/table.lua)
+-- Ashita's T has more features like containskey that its libs depend on
+if _G.T == nil then
+    _G.T = T
+end
 
-return { new = T }
+return { new = _G.T or T }

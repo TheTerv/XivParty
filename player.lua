@@ -121,7 +121,7 @@ function player:update(member, target, subtarget)
         self.isTrust = member.mob.is_npc
 
         if member.mob.distance then
-            self.distance = member.mob.distance:sqrt()
+            self.distance = math.sqrt(member.mob.distance)
         end
 
         if self.isTrust and (self.job == nil or self.jobLvl == nil or self.jobLvl == 0) then -- optimization: only update if job/lvl not set
