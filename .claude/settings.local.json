@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(powershell.exe -Command:*)",
-      "Bash(xcopy:*)"
+      "Bash(xcopy:*)",
+      "Bash(dir \"C:\\dev\\XivParty\" /b)",
+      "Bash(dir \"C:\\dev\\Ashita-v4beta\\addons\\libs\" /b)"
     ],
     "deny": [],
     "ask": []
