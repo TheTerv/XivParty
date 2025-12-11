@@ -28,6 +28,8 @@
 
 -- imports
 local const = require('const')
+local lists = require('lists')
+local L = lists.new
 
 local defaults = {
     layout = const.defaultLayout, -- active UI layout, found in XivParty/layouts directory

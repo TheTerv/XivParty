@@ -96,7 +96,7 @@ end
 function uiContainer:clearChildren(dispose)
     if not self.isEnabled then return end
 
-    for child in self.children:it() do
+    for _, child in self.children:it() do
         child.parent = nil
 
         if dispose then
@@ -118,7 +118,7 @@ function uiContainer:createPrimitives()
     -- sort children by z-order ascending
     utils:insertionSort(self.children, function(a, b) return a.zOrder > b.zOrder end)
 
-    for child in self.children:it() do
+    for _, child in self.children:it() do
         child:createPrimitives()
     end
 
@@ -131,7 +131,7 @@ function uiContainer:layoutElement()
 
     self.super:layoutElement()
 
-    for child in self.children:it() do
+    for _, child in self.children:it() do
         child:layoutElement()
     end
 end
@@ -141,7 +141,7 @@ function uiContainer:update()
 
     self.super:update()
 
-    for child in self.children:it() do
+    for _, child in self.children:it() do
         child:update()
     end
 end

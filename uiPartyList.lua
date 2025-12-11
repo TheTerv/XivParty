@@ -142,7 +142,7 @@ function uiPartyList:setUiLocked(isUiLocked)
     if not self.isEnabled then return end
 
     self.isUiLocked = isUiLocked
-    for item in self.listItems:it() do
+    for _, item in self.listItems:it() do
         item:setUiLocked(isUiLocked)
     end
 end
@@ -160,12 +160,39 @@ function uiPartyList:update()
     end
 
     -- update list items
+    -- Debug: check if model.parties exists
+    if not self.model then
+        log('uiPartyList:update - self.model is nil!', 4)
+        return
+    end
+    if not self.model.parties then
+        log('uiPartyList:update - self.model.parties is nil!', 4)
+        return
+    end
+    if not self.model.parties[index] then
+        log('uiPartyList:update - self.model.parties[' .. index .. '] is nil!', 4)
+        return
+    end
+
+    -- Debug: dump what's in the parties table
+    local partyTable = self.model.parties[index]
+    local debugKeys = {}
+    for k, v in pairs(partyTable) do
+        table.insert(debugKeys, tostring(k) .. '=' .. type(v))
+    end
+    if #debugKeys > 0 then
+        log('PartyList[' .. self.partyIndex .. '] parties[' .. index .. '] keys: ' .. table.concat(debugKeys, ', '), 3)
+    end
+
+    local foundPlayers = 0
     for i = 0, 5 do
         local player = self.model.parties[index][i]
         local item = self.listItems[i]
 
         if player then
+            foundPlayers = foundPlayers + 1
             if not item then
+                log('Creating listItem for player: ' .. tostring(player.name) .. ' at index ' .. i, 3)
                 item = self:addChild(uiListItem.new(self.layout.listItem, player, self.isUiLocked, self.layout.columnWidth, self.layout.rowHeight))
                 self.listItems[i] = item
             else
@@ -178,10 +205,19 @@ function uiPartyList:update()
         end
     end
 
+    -- Debug: log player count once per frame if changed
+    if foundPlayers > 0 then
+        log('PartyList[' .. self.partyIndex .. '] found ' .. foundPlayers .. ' players in model', 3)
+    end
+
     local partySettings = Settings:getPartySettings(self.partyIndex)
 
     -- update the background
-    local count = self.listItems:length()
+    -- Note: listItems uses 0-based indices (0-5), so # operator won't work
+    local count = 0
+    for i = 0, 5 do
+        if self.listItems[i] then count = count + 1 end
+    end
     local rowCount = math.floor((count - 1) / self.layout.columns) + 1
     if partySettings.showEmptyRows then
         rowCount = self.layout.rows

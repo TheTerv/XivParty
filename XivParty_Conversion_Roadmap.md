@@ -75,10 +75,6 @@ Every time we are ready to test, we need to copy the addon to C:\dev\Ashita-v4be
 - Hardcode a single image (e.g., the Job Icon or a background bar) to appear at 100, 100.
 - Success: The image appears on screen and persists. *(Met via `/xp testui`; present hook keeps debug image visible.)*
 
-### Known Issues Fixed
-- **Layout defaults:** `layout.lua` defaults to `enabled = false` for all elements. Since config.lua shim doesn't parse XML, elements never get enabled. Fixed by changing default to `enabled = true`.
-- **Missing files:** The `layouts/` directory and asset folders (`assets/xiv/`, `assets/jobIcons/`, `assets/ffxi/`) must be copied to the addon folder.
-
 ---
 
 ## Milestone 4: Event & Packet Wiring
@@ -91,7 +87,7 @@ Every time we are ready to test, we need to copy the addon to C:\dev\Ashita-v4be
 - [ ] **Party Updates (0xDD):** Parse job/HP/MP/TP and update players.
 - [ ] **Char Updates (0xDF):** Parse job/HP/MP/TP and update players.
 - [ ] **Buff Tracking:** 0x076 party buff packet wired; main-player buffs still pending resource lookup.
-- [x] **KNOWN GAP (FIXED):** Self stats now working via `IParty:GetMemberHP(0)`, etc. SDK confirmed IPlayer has NO GetHP/GetMP/GetTP methods.
+- [ ] **KNOWN GAP:** Self stats via party data are still zero; need to switch to direct memory reads (Ashita player/party structs) to populate HP/MP/TP/HPP/MPP for p0 (reference tparty / Ashita.h).
 
 ### Test Criteria
 - Have a party member take damage or gain a buff.

@@ -105,7 +105,7 @@ function model:getPlayer(name, id, debugTag, dontCreate)
         return nil
     end
 
-    for ap in self.allPlayers:it() do
+    for _, ap in self.allPlayers:it() do
         if name and ap.name == name then
             foundByName = ap
         end
@@ -158,7 +158,7 @@ end
 function model:findPartyLeader(partyIndex)
     if not partyIndex then partyIndex = 0 end
 
-    for p in self.parties[partyIndex]:it() do
+    for _, p in self.parties[partyIndex]:it() do
         if p.isLeader then
             return p
         end
@@ -168,13 +168,13 @@ function model:findPartyLeader(partyIndex)
 end
 
 function model:refreshFilteredBuffs()
-    for p in self.parties[0]:it() do -- alliance members do not have buff information, only iterate the main party list as a minor optimization
+    for _, p in self.parties[0]:it() do -- alliance members do not have buff information, only iterate the main party list as a minor optimization
         p:refreshFilteredBuffs()
     end
 end
 
 function model:hasAlliance2Members()
-    return self.parties[2]:length() > 0
+    return #self.parties[2] > 0
 end
 
 -- creates dummy parties for setup mode
@@ -229,7 +229,7 @@ function model:debugAddSetupPlayer(partyIndex)
     if not partyIndex then partyIndex = 0 end
 
     local setupParty = self.parties[partyIndex]
-    local i = setupParty:length()
+    local i = #setupParty
 
     if i > 5 then error('Cannot add setup player, party full!') return end
 

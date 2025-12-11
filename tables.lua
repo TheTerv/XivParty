@@ -17,7 +17,10 @@ function table_mt:it()
     local i = 0
     return function()
         i = i + 1
-        return self[i]
+        if self[i] ~= nil then
+            return i, self[i]  -- Return key, value to match Ashita's T{} behavior
+        end
+        return nil
     end
 end
 

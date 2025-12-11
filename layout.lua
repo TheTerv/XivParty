@@ -35,7 +35,8 @@
 
 -- windower library imports
 require('tables')
-require('lists')
+local lists = require('lists')
+local L = lists.new  -- Use module's L function directly instead of relying on global
 
 -- helper functions
 local function element(values)

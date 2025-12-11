@@ -29,6 +29,8 @@
 -- windower library imports
 local config = require('config')
 require('strings')
+local lists = require('lists')
+local L = lists.new
 
 -- imports
 local classes = require('classes')
@@ -147,7 +149,7 @@ function settings:loadFilters()
 
     -- why use a custom CSV parser? because config.lua does not detect a list with a single element as a list >_>
     if self.buffs.filters ~= '' then
-        for part in T(self.buffs.filters:split(';')):it() do
+        for _, part in T(self.buffs.filters:split(';')):it() do
             local buffIdString = part:trim()
             if buffIdString ~= '' then
                 self.buffFilters[tonumber(buffIdString)] = true

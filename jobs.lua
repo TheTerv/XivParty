@@ -27,7 +27,8 @@
 ]]
 
 -- windower library imports
-require('lists')
+local lists = require('lists')
+local L = lists.new
 
 -- imports
 local utils = require('utils')
@@ -218,7 +219,7 @@ function jobs:getRoleColor(job, jobIconColors)
 end
 
 function jobs:getTrustInfo(trustName, trustModel)
-    for t in jobs.trusts:it() do
+    for _, t in jobs.trusts:it() do
         if t.name == trustName and (t.model == nil or t.model == trustModel) then
             return t
         end

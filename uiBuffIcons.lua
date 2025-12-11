@@ -32,6 +32,8 @@ local uiContainer = require('uiContainer')
 local uiImage = require('uiImage')
 local const = require('const')
 local utils = require('utils')
+local lists = require('lists')
+local L = lists.new
 
 -- create the class, derive from uiContainer
 local uiBuffIcons = classes.class(uiContainer)
@@ -98,7 +100,7 @@ function uiBuffIcons:validateLayout(layout)
     end
 
     -- check that number of rows in both lists is equal
-    if layout.numIconsByRow:length() ~= layout.offsetByRow:length() then
+    if #layout.numIconsByRow ~= #layout.offsetByRow then
         error('Layout invalid! Lists numIconsByRow and offsetByRow must have the same number of entries!')
         return false
     end
@@ -108,7 +110,7 @@ end
 
 -- gets the row index for the specified icon index, returns nil if the icon won't fit in the defined rows
 function uiBuffIcons:getRow(iconIndex)
-    for row = 1, self.layout.numIconsByRow:length() do
+    for row = 1, #self.layout.numIconsByRow do
         local numIcons = tonumber(self.layout.numIconsByRow[row]) -- numbers in L{} lists are loaded as strings by the config library
 
         if iconIndex <= numIcons then return row end
@@ -141,7 +143,7 @@ end
  -- maximum number of icons we can display, either capped by row definitions or the game's limit of 32
 function uiBuffIcons:getMaxBuffCount()
     local count = 0
-    for row = 1, self.layout.numIconsByRow:length() do
+    for row = 1, #self.layout.numIconsByRow do
         local numIcons = tonumber(self.layout.numIconsByRow[row])
         count = count + numIcons
     end
@@ -172,7 +174,7 @@ function uiBuffIcons:update()
                 local numIcons = self.layout.numIconsByRow[row] -- maximum number of icons that fit in this row
                 local sumPreviousRows = self:getSumOfPreviousRows(row)
 
-                local totalBuffCount = math.min(buffs:length(), self.maxBuffCount) -- total number of active buffs to display
+                local totalBuffCount = math.min(#buffs, self.maxBuffCount) -- total number of active buffs to display
                 local buffCountInRow = math.min(totalBuffCount - sumPreviousRows, numIcons) -- number of active buffs to display in current row
 
                 local indexOffset = buffCountInRow - numIcons -- offset between image index and buff index

@@ -47,6 +47,8 @@ function uiElement:init(layout)
     private[self] = {}
     private[self].visibility = {}
     private[self].visibility[const.visDefault] = true
+    private[self].visibility[const.visInit] = true  -- Initialize visInit to true (Ashita doesn't need the texture load delay)
+    private[self].visibility[const.visFeature] = true  -- Initialize visFeature to true by default
     self.absoluteVisibility = true
 
     self.parent = nil

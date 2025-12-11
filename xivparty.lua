@@ -808,11 +808,11 @@ ashita.events.register('command', 'xivparty_command', function(e)
             log('Global settings applied. The job specific settings for ' .. job .. ' will remain saved for later use.')
         end
     elseif command == 'debug' then
-        local subCommand = string.lower(arg2)
+        local subCommand = arg2 and string.lower(arg2) or ''
         if subCommand == 'savelayout' then
             view:debugSaveLayout()
         elseif subCommand == 'refcount' then
-            log('Images: ' .. RefCountImage .. ', Texts: ' .. RefCountText)
+            print(chat.header(addon.name):append(chat.message('Images: ' .. RefCountImage .. ', Texts: ' .. RefCountText)))
         elseif subCommand == 'setbar' and arg3 ~= nil and setupModel then -- example: //xp debug setbar hpp 50 0 2
             setupModel:debugSetBarValue(arg3, tonumber(arg4), tonumber(args[6]), tonumber(args[7]))
         elseif subCommand == 'addplayer' and setupModel then
@@ -859,6 +859,108 @@ ashita.events.register('command', 'xivparty_command', function(e)
                 local m = party[key]
                 if m and m.name then
                     print(chat.header(addon.name):append(chat.message(string.format('%s HP:%s MP:%s TP:%s Zone:%s', m.name, tostring(m.hp), tostring(m.mp), tostring(m.tp), tostring(m.zone)))))
+                end
+            end
+        elseif subCommand == 'testprim' then
+            -- Direct test of Ashita primitives library (bypassing XivParty shims)
+            local primitives = require('primitives');
+            local testPrim = primitives.new({
+                visible = true,
+                locked = true,
+                position_x = 100,
+                position_y = 100,
+                width = 200,
+                height = 50,
+                color = 0xFFFF0000,  -- Red
+            });
+            print(chat.header(addon.name):append(chat.message('Created test primitive at 100,100 size 200x50 (red rectangle)')));
+            print(chat.header(addon.name):append(chat.message('Run "/xp debug testprim" again to create another, or reload addon to clear')));
+        elseif subCommand == 'testshim' then
+            -- Test using our images.lua shim
+            local testimages = require('images');
+            local testImg = testimages.new();
+            testImg:pos(150, 150);
+            testImg:size(100, 100);
+            testImg:color(0, 255, 0);  -- Green
+            testImg:alpha(255);
+            testImg:visible(true);
+            print(chat.header(addon.name):append(chat.message('Created test image via shim at 150,150 size 100x100 (green rectangle)')));
+        elseif subCommand == 'testfull' then
+            -- Test with texture like XivParty uses
+            local testimages = require('images');
+            local testImg = testimages.new();
+            testImg:pos(200, 200);
+            testImg:size(377, 21);
+            testImg:path('assets/xiv/BgTop.png');
+            testImg:visible(true);
+            print(chat.header(addon.name):append(chat.message('Created test image with texture at 200,200')));
+            print(chat.header(addon.name):append(chat.message('Texture: ' .. windower.addon_path .. 'assets\\xiv\\BgTop.png')));
+        elseif subCommand == 'uistate' then
+            -- Detailed UI state trace
+            print(chat.header(addon.name):append(chat.message('--- UI State Debug ---')));
+            if not view then
+                print(chat.header(addon.name):append(chat.error('view is nil!')));
+                return;
+            end
+            print(chat.header(addon.name):append(chat.message('view.isEnabled=' .. tostring(view.isEnabled) .. ' isCreated=' .. tostring(view.isCreated))));
+            print(chat.header(addon.name):append(chat.message('view.absoluteVisibility=' .. tostring(view.absoluteVisibility))));
+            print(chat.header(addon.name):append(chat.message('view.children count=' .. tostring(#view.children))));
+
+            for pi = 0, 2 do
+                local pl = view.partyLists[pi];
+                if pl then
+                    print(chat.header(addon.name):append(chat.message('--- PartyList[' .. pi .. '] ---')));
+                    print(chat.header(addon.name):append(chat.message('  isEnabled=' .. tostring(pl.isEnabled) .. ' isCreated=' .. tostring(pl.isCreated))));
+                    print(chat.header(addon.name):append(chat.message('  absoluteVisibility=' .. tostring(pl.absoluteVisibility))));
+                    print(chat.header(addon.name):append(chat.message('  pos=' .. tostring(pl.posX) .. ',' .. tostring(pl.posY))));
+                    print(chat.header(addon.name):append(chat.message('  absolutePos=' .. tostring(pl.absolutePos.x) .. ',' .. tostring(pl.absolutePos.y))));
+                    print(chat.header(addon.name):append(chat.message('  scale=' .. tostring(pl.scaleX) .. ',' .. tostring(pl.scaleY))));
+                    print(chat.header(addon.name):append(chat.message('  children count=' .. tostring(#pl.children))));
+
+                    -- Check background
+                    if pl.background then
+                        local bg = pl.background;
+                        print(chat.header(addon.name):append(chat.message('  background.isEnabled=' .. tostring(bg.isEnabled) .. ' isCreated=' .. tostring(bg.isCreated))));
+                        print(chat.header(addon.name):append(chat.message('  background.absoluteVisibility=' .. tostring(bg.absoluteVisibility))));
+                        if bg.imgTop then
+                            print(chat.header(addon.name):append(chat.message('    imgTop: isCreated=' .. tostring(bg.imgTop.isCreated) .. ' absVis=' .. tostring(bg.imgTop.absoluteVisibility))));
+                            print(chat.header(addon.name):append(chat.message('      calculated pos=' .. tostring(bg.imgTop.absolutePos.x) .. ',' .. tostring(bg.imgTop.absolutePos.y) .. ' size=' .. tostring(bg.imgTop.absoluteWidth) .. ',' .. tostring(bg.imgTop.absoluteHeight))));
+                            if bg.imgTop.wrappedImage and bg.imgTop.wrappedImage.prim then
+                                local prim = bg.imgTop.wrappedImage.prim;
+                                print(chat.header(addon.name):append(chat.message('      actual prim pos=' .. tostring(prim.position_x) .. ',' .. tostring(prim.position_y) .. ' size=' .. tostring(prim.width) .. 'x' .. tostring(prim.height))));
+                            end
+                        end
+                    end
+
+                    -- Check listItems
+                    local itemCount = 0;
+                    for i = 0, 5 do
+                        local item = pl.listItems[i];
+                        if item then
+                            itemCount = itemCount + 1;
+                            print(chat.header(addon.name):append(chat.message('  listItem[' .. i .. '].isEnabled=' .. tostring(item.isEnabled) .. ' isCreated=' .. tostring(item.isCreated))));
+                            print(chat.header(addon.name):append(chat.message('    absoluteVisibility=' .. tostring(item.absoluteVisibility))));
+                            print(chat.header(addon.name):append(chat.message('    children count=' .. tostring(#item.children))));
+                            -- Check first text element
+                            if item.txtName then
+                                print(chat.header(addon.name):append(chat.message('    txtName.isEnabled=' .. tostring(item.txtName.isEnabled) .. ' isCreated=' .. tostring(item.txtName.isCreated))));
+                                print(chat.header(addon.name):append(chat.message('    txtName.absoluteVisibility=' .. tostring(item.txtName.absoluteVisibility))));
+                                print(chat.header(addon.name):append(chat.message('    txtName.calculated pos=' .. tostring(item.txtName.absolutePos.x) .. ',' .. tostring(item.txtName.absolutePos.y))));
+                                if item.txtName.wrappedText and item.txtName.wrappedText.prim then
+                                    local prim = item.txtName.wrappedText.prim;
+                                    print(chat.header(addon.name):append(chat.message('    txtName.actual prim pos=' .. tostring(prim.position_x) .. ',' .. tostring(prim.position_y) .. ' visible=' .. tostring(prim.visible))));
+                                    print(chat.header(addon.name):append(chat.message('    txtName.text="' .. tostring(prim.text) .. '" color=' .. string.format('0x%08X', prim.color or 0) .. ' font_height=' .. tostring(prim.font_height))));
+                                end
+                            else
+                                print(chat.header(addon.name):append(chat.message('    txtName is nil!')));
+                            end
+                            -- Check hover image
+                            if item.hover then
+                                print(chat.header(addon.name):append(chat.message('    hover.isEnabled=' .. tostring(item.hover.isEnabled) .. ' isCreated=' .. tostring(item.hover.isCreated))));
+                            end
+                        end
+                    end
+                    print(chat.header(addon.name):append(chat.message('  listItems total=' .. itemCount)));
                 end
             end
         end

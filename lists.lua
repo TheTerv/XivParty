@@ -15,12 +15,15 @@ function list_mt:clear()
     end
 end
 
--- Simple iterator that yields values (not keys).
+-- Iterator that yields (key, value) pairs to match Ashita's T{} behavior.
 function list_mt:it()
     local i = 0
     return function()
         i = i + 1
-        return self[i]
+        if self[i] ~= nil then
+            return i, self[i]
+        end
+        return nil
     end
 end
 

@@ -53,20 +53,25 @@ end
 ----------------------------------------------------------------------------------------------------
 -- windower.ffxi.get_player()
 -- Returns current player data (name, jobs, buffs, etc.)
+--
+-- SDK Reference (Ashita.h):
+--   IPlayer: GetHPMax(), GetMPMax(), GetMainJob(), GetSubJob(), etc. (NO GetHP/GetMP/GetTP!)
+--   IParty:  GetMemberHP(0), GetMemberMP(0), GetMemberTP(0), GetMemberHPPercent(0), GetMemberMPPercent(0)
+--   Entity:  HPPercent only (NO HP, MP, TP, MPPercent fields)
 ----------------------------------------------------------------------------------------------------
 function adapter.get_player()
     local playerData = {};
     local player = getPlayerManager();
     local playerEntity = GetPlayerEntity();
-    local partyMgr = getPartyManager();
-    local partySlot0 = nil;
+    local party = getPartyManager();
 
+    -- Name and ID from entity
     if playerEntity then
         playerData.name = playerEntity.Name;
         playerData.id = playerEntity.ServerId;
     end
 
-    -- Job information
+    -- Job information (IPlayer has these)
     playerData.main_job = player:GetMainJob();
     playerData.main_job_id = player:GetMainJob();
     playerData.main_job_level = player:GetMainJobLevel();
@@ -74,64 +79,16 @@ function adapter.get_player()
     playerData.sub_job_id = player:GetSubJob();
     playerData.sub_job_level = player:GetSubJobLevel();
 
-    -- HP/MP/TP values and percentages from party memory (slot 0 is self)
-    playerData.hp = partyMgr:GetMemberHP(0) or 0;
-    playerData.mp = partyMgr:GetMemberMP(0) or 0;
-    playerData.tp = partyMgr:GetMemberTP(0) or 0;
-    playerData.hpp = partyMgr:GetMemberHPPercent(0) or 0;
-    local maxHpParty = partyMgr.GetMemberMaxHP and partyMgr:GetMemberMaxHP(0) or nil;
-    local maxMpParty = partyMgr.GetMemberMaxMP and partyMgr:GetMemberMaxMP(0) or nil;
-    if maxHpParty and maxHpParty > 0 then
-        playerData.hpp = math.floor((playerData.hp / maxHpParty) * 100);
-    end
-    if maxMpParty and maxMpParty > 0 then
-        playerData.mpp = math.floor((playerData.mp / maxMpParty) * 100);
-    else
-        playerData.mpp = 0;
-    end
+    -- HP/MP/TP values from IParty (self is index 0) - THIS IS THE CORRECT SOURCE
+    playerData.hp = party:GetMemberHP(0) or 0;
+    playerData.mp = party:GetMemberMP(0) or 0;
+    playerData.tp = party:GetMemberTP(0) or 0;
+    playerData.hpp = party:GetMemberHPPercent(0) or 0;
+    playerData.mpp = party:GetMemberMPPercent(0) or 0;
 
-    -- If entity is available, override with entity HP/MP/% as a better source
-    if playerEntity then
-        playerData.hp = playerEntity.HP or playerData.hp or 0;
-        playerData.mp = playerEntity.MP or playerData.mp or 0;
-        playerData.tp = playerEntity.TP or playerData.tp or 0;
-        playerData.hpp = playerEntity.HPPercent or playerData.hpp or 0;
-        playerData.mpp = playerEntity.MPPercent or playerData.mpp or 0;
-    end
-
-    -- Fallback to player manager direct reads if available (some installs may not populate entity/party data)
-    local function tryCall(obj, method)
-        local ok, val = pcall(function() return obj[method](obj) end)
-        return ok and val or nil
-    end
-
-    local pmHP = tryCall(player, 'GetHP')
-    local pmMP = tryCall(player, 'GetMP')
-    local pmTP = tryCall(player, 'GetTP')
-    local pmHPMax = tryCall(player, 'GetMaxHP') or tryCall(player, 'GetHPMax')
-    local pmMPMax = tryCall(player, 'GetMaxMP') or tryCall(player, 'GetMPMax')
-
-    if pmHP then playerData.hp = pmHP end
-    if pmMP then playerData.mp = pmMP end
-    if pmTP then playerData.tp = pmTP end
-    if pmHP and pmHPMax and pmHPMax > 0 then
-        playerData.hpp = math.floor((pmHP / pmHPMax) * 100)
-    end
-    if pmMP and pmMPMax and pmMPMax > 0 then
-        playerData.mpp = math.floor((pmMP / pmMPMax) * 100)
-    end
-
-    -- If entity provides max values, refine percents
-    if playerEntity then
-        local maxHP = playerEntity.MaxHP or pmHPMax or maxHpParty
-        local maxMP = playerEntity.MaxMP or pmMPMax or maxMpParty
-        if maxHP and maxHP > 0 then
-            playerData.hpp = math.floor((playerData.hp / maxHP) * 100)
-        end
-        if maxMP and maxMP > 0 then
-            playerData.mpp = math.floor((playerData.mp / maxMP) * 100)
-        end
-    end
+    -- Max values from IPlayer (for reference, not currently used by XivParty)
+    playerData.hp_max = player:GetHPMax() or 0;
+    playerData.mp_max = player:GetMPMax() or 0;
 
     -- Buffs array (1-32, matching Windower's 1-based indexing)
     playerData.buffs = {};
@@ -172,6 +129,10 @@ end
 -- windower.ffxi.get_party()
 -- Returns party and alliance member data
 -- Windower format: { p0={}, p1={}, ..., p5={}, a10={}, a11={}, ..., a25={}, party1_leader=name }
+--
+-- SDK Reference (Ashita.h):
+--   IParty: GetMemberHP(i), GetMemberMP(i), GetMemberTP(i), GetMemberHPPercent(i), GetMemberMPPercent(i)
+--   Entity: Only HPPercent available (NO HP, MP, TP, MPPercent fields!)
 ----------------------------------------------------------------------------------------------------
 function adapter.get_party()
     local partyData = {};
@@ -194,9 +155,15 @@ function adapter.get_party()
 
             member.name = memberName;
             member.zone = party:GetMemberZone(i);
-            member.tp = party:GetMemberTP(i);
 
-            -- Get entity for additional data if in same zone
+            -- HP/MP/TP from IParty - THIS IS THE CORRECT AND ONLY RELIABLE SOURCE
+            member.hp = party:GetMemberHP(i) or 0;
+            member.mp = party:GetMemberMP(i) or 0;
+            member.tp = party:GetMemberTP(i) or 0;
+            member.hpp = party:GetMemberHPPercent(i) or 0;
+            member.mpp = party:GetMemberMPPercent(i) or 0;
+
+            -- Get entity for mob sub-table (distance, is_npc, etc.)
             local targetIndex = party:GetMemberTargetIndex(i);
             local entity = nil;
             if targetIndex > 0 then
@@ -204,12 +171,6 @@ function adapter.get_party()
             end
 
             if entity then
-                member.hp = entity.HP or 0;
-                member.mp = entity.MP or 0;
-                member.hpp = entity.HPPercent or 0;
-                member.mpp = entity.MPPercent or 0;  -- entity provides MP%
-                member.tp = member.tp or entity.TP or 0;
-
                 -- Mob sub-table (matches Windower structure)
                 member.mob = {
                     id = entity.ServerId or party:GetMemberServerId(i),
@@ -220,43 +181,7 @@ function adapter.get_party()
                     models = { entity.ModelHair or 0 }  -- Model info for trust detection
                 };
             else
-                -- Party member in different zone or no entity data
-                member.hp = party:GetMemberHP(i) or 0;
-                member.mp = party:GetMemberMP(i) or 0;
-                member.tp = party:GetMemberTP(i) or member.tp;
-                member.hpp = party:GetMemberHPPercent(i) or 0;
-                member.mpp = 0;
                 member.mob = nil;
-            end
-
-            -- For self (p0), ensure values are populated even if party/entity missing
-            if i == 0 then
-                local selfEnt = GetPlayerEntity();
-                local pm = AshitaCore:GetMemoryManager():GetPlayer();
-                local function pmCall(m)
-                    local ok, val = pcall(function() return pm[m](pm) end)
-                    return ok and val or nil
-                end
-                local pmHP = pmCall('GetHP') or pmCall('GetMaxHP');
-                local pmMP = pmCall('GetMP') or pmCall('GetMaxMP');
-                local pmTP = pmCall('GetTP');
-                local pmHPP = pmCall('GetHPP');
-                local pmMPP = pmCall('GetMPP');
-                if selfEnt then
-                    member.hp = selfEnt.HP or member.hp or 0;
-                    member.mp = selfEnt.MP or member.mp or 0;
-                    member.tp = selfEnt.TP or member.tp or 0;
-                    member.hpp = selfEnt.HPPercent or member.hpp or 0;
-                    member.mpp = selfEnt.MPPercent or member.mpp or 0;
-                end
-                if pmHP then member.hp = pmHP end
-                if pmMP then member.mp = pmMP end
-                if pmTP then member.tp = pmTP end
-                if pmHPP then member.hpp = pmHPP end
-                if pmMPP then member.mpp = pmMPP end
-                if (not member.tp) then
-                    member.tp = party:GetMemberTP(i);
-                end
             end
 
             partyData[key] = member;
@@ -264,20 +189,6 @@ function adapter.get_party()
             -- Track party leader (first member of main party, index 0)
             if i == 0 then
                 partyData.party1_leader = member.name;
-                -- Ensure self stats are filled even if entity was missing
-                if member.hp == 0 then
-                    local selfEntity = GetPlayerEntity();
-                    if selfEntity then
-                        member.hp = selfEntity.HP or member.hp;
-                        member.mp = selfEntity.MP or member.mp;
-                        member.hpp = selfEntity.HPPercent or member.hpp;
-                        member.mpp = selfEntity.MPPercent or member.mpp;
-                        member.tp = selfEntity.TP or member.tp;
-                    end
-                end
-                if member.tp == nil then
-                    member.tp = party:GetMemberTP(i);
-                end
             end
         else
             partyData[key] = nil;
@@ -346,7 +257,9 @@ end
 -- Returns the addon's directory path
 ----------------------------------------------------------------------------------------------------
 function adapter.get_addon_path()
-    return string.format('%saddons/%s/', AshitaCore:GetInstallPath(), 'xivparty');
+    -- Use backslashes consistently for Windows paths
+    local installPath = AshitaCore:GetInstallPath():gsub('/', '\\');
+    return string.format('%saddons\\xivparty\\', installPath);
 end
 
 ----------------------------------------------------------------------------------------------------

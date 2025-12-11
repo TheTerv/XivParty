@@ -48,20 +48,22 @@ function ImageWrapper:new(primObj)
     return obj;
 end
 
--- Set the image file path (relative to addon directory)
+-- Set the image file path
 function ImageWrapper:path(filePath)
     if not filePath or filePath == '' then return end
 
-    local candidate1 = string.format('%s%s', windower.addon_path, filePath);
-    local candidate2 = string.format('%saddons/xivparty/%s', AshitaCore:GetInstallPath(), filePath);
+    -- Normalize slashes to backslashes for Windows
+    local normalizedPath = filePath:gsub('/', '\\');
+    local fullPath = normalizedPath;
 
-    local fullPath = candidate1;
-    local f = io.open(fullPath, 'r');
-    if not f then
-        fullPath = candidate2;
-        f = io.open(fullPath, 'r');
+    -- Check if path is already absolute (drive letter like C:\)
+    local isAbsolute = normalizedPath:match('^%a:\\');
+
+    if not isAbsolute then
+        -- Prepend addon path for relative paths
+        local addonPath = windower.addon_path or '';
+        fullPath = addonPath .. normalizedPath;
     end
-    if f then f:close() end
 
     self.prim.texture = fullPath;
     self.imgPath = filePath;

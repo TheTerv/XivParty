@@ -27,7 +27,8 @@
 ]]
 
 -- windower library imports
-require('lists')
+local lists = require('lists')
+local L = lists.new
 
 -- the order of entires in this list defines the sort order of buffs for all party members
 -- this file must be saved as UTF-8 without BOM (or ANSI if you don't care about the JP texts)
@@ -749,7 +750,7 @@ local buffOrder = L{
 local function getBuffOrderWithIdKeys(b)
     local ret = {}
     local sort = 0
-    for entry in b:it() do
+    for _, entry in b:it() do
         ret[entry.id] = sort
         sort = sort + 1
     end
